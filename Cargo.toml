@@ -1,6 +1,6 @@
 [package]
 name = "prob"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["ticki <ticki@users.noreply.github.com>"]
 description = "Calculating independent probabilities."
 repository = "https://github.com/ticki/prob"

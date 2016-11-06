@@ -42,10 +42,10 @@ use std::ops;
 /// - `|` for **independent or**.
 /// - `^` for **independent mutual exclusivity**.
 /// - `!` for **inverse probability**.
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub struct Probability<T: Num>(pub T);
 
-impl<T: Num> Probability<T> {
+impl<T: Num + PartialOrd> Probability<T> {
     /// The probability representing a "almost certain" condition.
     ///
     /// "Almost certain" (a.c.) should not be equated with "certain", because something can be
@@ -60,12 +60,12 @@ impl<T: Num> Probability<T> {
 
     /// The inverse of an "almost certain" condition (almost never).
     pub fn never() -> Probability<T> {
-        !Probability::certain()
+        Probability(T::zero())
     }
 
     /// Half the probability.
     pub fn half(self) -> Probability<T> {
-        Probability(self.0 / (T::one() + T::one()))
+        Probability(self.check().0 / (T::one() + T::one())).check()
     }
 
     /// A fifty-fifty probability (0.5).
@@ -75,39 +75,47 @@ impl<T: Num> Probability<T> {
 
     /// 'or' for mutually exclusive events
     pub fn disjointed_or(self, rhs: Probability<T>) -> Probability<T> {
-        Probability(self.0 + rhs.0)
+        Probability(self.check().0 + rhs.check().0).check()
+    }
+
+    /// Check the probability for overflows or degenerate values.
+    fn check(self) -> Probability<T> {
+        debug_assert!(self.0 >= Probability::never().0, "Negative probability.");
+        debug_assert!(self.0 <= Probability::certain().0, "Probability overflow (>1).");
+
+        self
     }
 }
 
-impl<T: Num> ops::Not for Probability<T> {
+impl<T: Num + PartialOrd> ops::Not for Probability<T> {
     type Output = Probability<T>;
 
     fn not(self) -> Probability<T> {
-        Probability(T::one() - self.0)
+        Probability(T::one() - self.check().0).check()
     }
 }
 
-impl<T: Num> ops::BitAnd for Probability<T> {
+impl<T: Num + PartialOrd> ops::BitAnd for Probability<T> {
     type Output = Probability<T>;
 
     fn bitand(self, rhs: Probability<T>) -> Probability<T> {
-        Probability(self.0 * rhs.0)
+        Probability(self.check().0 * rhs.check().0).check()
     }
 }
 
-impl<T: Num + Copy> ops::BitOr for Probability<T> {
+impl<T: Num + Clone + PartialOrd> ops::BitOr for Probability<T> {
     type Output = Probability<T>;
 
     fn bitor(self, rhs: Probability<T>) -> Probability<T> {
-        Probability(self.0 + rhs.0 - self.0 * rhs.0)
+        Probability(self.clone().check().0 + rhs.clone().check().0.clone() - self.0 * rhs.0).check()
     }
 }
 
-impl<T: Num + Copy> ops::BitXor for Probability<T> {
+impl<T: Num + Clone + PartialOrd> ops::BitXor for Probability<T> {
     type Output = Probability<T>;
 
     fn bitxor(self, rhs: Probability<T>) -> Probability<T> {
-        (self & !rhs).disjointed_or(rhs & !self)
+        (self.clone().check() & !rhs.clone().check()).disjointed_or(rhs & !self).check()
     }
 }
 
