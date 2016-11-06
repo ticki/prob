@@ -1,0 +1,13 @@
+[package]
+name = "prob"
+version = "0.1.0"
+authors = ["ticki <ticki@users.noreply.github.com>"]
+description = "Calculating independent probabilities."
+repository = "https://github.com/ticki/prob"
+documentation = "https://docs.rs/prob"
+license = "MIT"
+keywords = ["probability", "probabilities", "statistics", "analysis", "independent"]
+exclude = ["target", "Cargo.lock"]
+
+[dependencies]
+num = "0.1"
